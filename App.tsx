@@ -1,18 +1,57 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { AppTab, Product } from './types';
 import Sidebar from './components/Sidebar';
 import ChatBot from './components/ChatBot';
 import ProductCatalogView from './components/ProductCatalogView';
 import StrategyView from './components/StrategyView';
 import LeadDiscoveryView from './components/LeadDiscoveryView';
+import AuthView from './components/AuthView';
 import { generateSystemPrompt, PRODUCT_CATALOG as INITIAL_CATALOG } from './constants';
 import { translations, Language } from './translations';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.CHAT);
   const [products, setProducts] = useState<Product[]>(INITIAL_CATALOG);
-  const [language, setLanguage] = useState<Language>('pt');
+  const [language, setLanguage] = useState<Language>('en'); // Default to EN
+  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [isReady, setIsReady] = useState(false);
+
+  useEffect(() => {
+    // 1. Detect browser language
+    const browserLang = navigator.language.toLowerCase();
+    const detectedLang: Language = browserLang.startsWith('pt') ? 'pt' : 'en';
+    
+    // 2. Check for saved language preference
+    const savedLang = localStorage.getItem('gw_lang') as Language;
+    if (savedLang) {
+      setLanguage(savedLang);
+    } else {
+      setLanguage(detectedLang);
+    }
+
+    // 3. Check for existing session
+    const savedUser = localStorage.getItem('gw_session');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+    setIsReady(true);
+  }, []);
+
+  const handleSetLanguage = (lang: Language) => {
+    setLanguage(lang);
+    localStorage.setItem('gw_lang', lang);
+  };
+
+  const handleLogin = (userData: { name: string; email: string }) => {
+    setUser(userData);
+    localStorage.setItem('gw_session', JSON.stringify(userData));
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+    localStorage.removeItem('gw_session');
+  };
 
   const t = useMemo(() => translations[language], [language]);
 
@@ -78,13 +117,21 @@ const App: React.FC = () => {
     }
   };
 
+  if (!isReady) return null;
+
+  if (!user) {
+    return <AuthView language={language} setLanguage={handleSetLanguage} onLogin={handleLogin} />;
+  }
+
   return (
     <div className="flex bg-slate-50 min-h-screen">
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
         language={language} 
-        setLanguage={setLanguage} 
+        setLanguage={handleSetLanguage}
+        user={user}
+        onLogout={handleLogout}
       />
       
       <main className="flex-1 ml-64 min-h-screen">
@@ -101,13 +148,13 @@ const App: React.FC = () => {
           <div className="flex items-center gap-6">
             <div className="flex bg-slate-100 p-1 rounded-xl">
               <button 
-                onClick={() => setLanguage('pt')}
+                onClick={() => handleSetLanguage('pt')}
                 className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${language === 'pt' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 PT
               </button>
               <button 
-                onClick={() => setLanguage('en')}
+                onClick={() => handleSetLanguage('en')}
                 className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${language === 'en' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
               >
                 EN
@@ -119,7 +166,7 @@ const App: React.FC = () => {
                 <p className="text-[10px] text-slate-400">{t.header.time}</p>
               </div>
               <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">
-                AD
+                {user.name.slice(0, 1)}
               </div>
             </div>
           </div>

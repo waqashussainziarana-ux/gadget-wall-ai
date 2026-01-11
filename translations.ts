@@ -1,6 +1,27 @@
 
 export const translations = {
   en: {
+    auth: {
+      loginTitle: "Welcome Back",
+      loginSubtitle: "Login to access your Sales Hub",
+      signupTitle: "Join Gadget Wall",
+      signupSubtitle: "Start managing your mobile sales strategy",
+      forgotTitle: "Recover Access",
+      forgotSubtitle: "Enter your email to reset your password",
+      emailLabel: "Email Address",
+      passwordLabel: "Password",
+      nameLabel: "Full Name",
+      loginBtn: "Login",
+      signupBtn: "Create Account",
+      resetBtn: "Send Reset Link",
+      backToLogin: "Back to Login",
+      noAccount: "Don't have an account?",
+      hasAccount: "Already have an account?",
+      forgotLink: "Forgot password?",
+      logout: "Log Out",
+      successReset: "If this email exists, a reset link has been sent.",
+      errorAuth: "Invalid credentials or account does not exist."
+    },
     sidebar: {
       chat: "Sales Agent Chat",
       catalog: "Product Catalog",
@@ -135,6 +156,27 @@ export const translations = {
     }
   },
   pt: {
+    auth: {
+      loginTitle: "Bem-vindo de volta",
+      loginSubtitle: "Faça login para aceder ao seu Sales Hub",
+      signupTitle: "Junte-se à Gadget Wall",
+      signupSubtitle: "Comece a gerir a sua estratégia de vendas móveis",
+      forgotTitle: "Recuperar Acesso",
+      forgotSubtitle: "Introduza o seu email para redefinir a palavra-passe",
+      emailLabel: "Endereço de Email",
+      passwordLabel: "Palavra-passe",
+      nameLabel: "Nome Completo",
+      loginBtn: "Entrar",
+      signupBtn: "Criar Conta",
+      resetBtn: "Enviar Link de Recuperação",
+      backToLogin: "Voltar ao Login",
+      noAccount: "Não tem uma conta?",
+      hasAccount: "Já tem uma conta?",
+      forgotLink: "Esqueceu-se da palavra-passe?",
+      logout: "Sair",
+      successReset: "Se este email existir, um link de recuperação foi enviado.",
+      errorAuth: "Credenciais inválidas ou conta inexistente."
+    },
     sidebar: {
       chat: "Chat de Agente",
       catalog: "Catálogo de Produtos",
