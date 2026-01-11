@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { ChatMessage, Product } from '../types';
+import { ChatMessage, Product, Order } from '../types';
 import { salesService } from '../services/gemini';
 import { Language, translations } from '../translations';
 import InvoiceView, { InvoiceData } from './InvoiceView';
@@ -8,9 +8,12 @@ import InvoiceView, { InvoiceData } from './InvoiceView';
 interface ChatBotProps {
   language: Language;
   products: Product[];
+  isAdmin?: boolean;
+  onAdminLoginRequest?: () => void;
+  onOrderConfirmed?: (order: Order) => void;
 }
 
-const ChatBot: React.FC<ChatBotProps> = ({ language, products }) => {
+const ChatBot: React.FC<ChatBotProps> = ({ language, products, isAdmin = false, onAdminLoginRequest, onOrderConfirmed }) => {
   const t = useMemo(() => translations[language].chat, [language]);
   
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -65,6 +68,18 @@ const ChatBot: React.FC<ChatBotProps> = ({ language, products }) => {
       setMessages(prev => [...prev, modelMsg]);
 
       if (data) {
+        // Automatically save order if callback exists
+        if (onOrderConfirmed) {
+          onOrderConfirmed({
+            id: `ORD-${Date.now()}`,
+            customerName: data.customer_name,
+            items: data.items,
+            total: data.total,
+            date: data.date,
+            status: 'confirmed'
+          });
+        }
+        
         // Delay invoice showing slightly for better flow
         setTimeout(() => setCurrentInvoice(data), 1000);
       }
@@ -77,14 +92,14 @@ const ChatBot: React.FC<ChatBotProps> = ({ language, products }) => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-120px)] bg-white rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden relative">
+    <div className={`flex flex-col h-full ${isAdmin ? 'bg-white rounded-[2.5rem] shadow-xl border border-slate-100 overflow-hidden relative h-[calc(100vh-120px)]' : 'bg-transparent overflow-hidden relative'}`}>
       {currentInvoice && (
         <InvoiceView data={currentInvoice} onClose={() => setCurrentInvoice(null)} />
       )}
 
-      <div className="bg-slate-50/80 backdrop-blur-md p-6 border-b border-slate-100 flex justify-between items-center sticky top-0 z-10">
+      <div className={`p-6 border-b border-slate-100 flex justify-between items-center sticky top-0 z-10 ${isAdmin ? 'bg-slate-50/80 backdrop-blur-md' : 'bg-white'}`}>
         <div>
-          <h2 className="font-black text-slate-800 tracking-tight">Live Sales Simulation</h2>
+          <h2 className="font-black text-slate-800 tracking-tight">{isAdmin ? 'Live Sales Simulation' : 'Gadget Wall Sales Assistant'}</h2>
           <p className="text-[10px] text-green-600 font-bold uppercase tracking-widest flex items-center gap-2 mt-1">
             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_green]"></span> {t.online}
           </p>
@@ -128,7 +143,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ language, products }) => {
         )}
       </div>
 
-      <div className="p-6 bg-white border-t border-slate-100">
+      <div className={`p-6 bg-white border-t border-slate-100`}>
         <div className="flex gap-3 bg-slate-50 p-2 rounded-3xl border border-slate-100 shadow-inner">
           <input
             type="text"

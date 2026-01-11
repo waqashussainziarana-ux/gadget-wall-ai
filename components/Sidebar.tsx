@@ -19,6 +19,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, language, se
   const menuItems = [
     { id: AppTab.CHAT, label: t.chat, icon: '💬' },
     { id: AppTab.CATALOG, label: t.catalog, icon: '📱' },
+    { id: AppTab.ORDERS, label: t.orders, icon: '📄' },
     { id: AppTab.LEAD_GEN, label: t.leadGen, icon: '🔍' },
     { id: AppTab.PROMPT, label: t.prompt, icon: '🧠' },
     { id: AppTab.STRATEGY, label: t.strategy, icon: '📈' },

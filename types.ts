@@ -23,6 +23,15 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
+export interface Order {
+  id: string;
+  customerName: string;
+  items: Array<{ name: string; price: number; quantity: number }>;
+  total: number;
+  date: string;
+  status: 'confirmed' | 'pending' | 'shipped';
+}
+
 export interface Lead {
   id?: string;
   sourceUrl: string;
@@ -37,6 +46,7 @@ export interface Lead {
 export enum AppTab {
   CHAT = 'chat',
   CATALOG = 'catalog',
+  ORDERS = 'orders',
   PROMPT = 'prompt',
   STRATEGY = 'strategy',
   LEAD_GEN = 'lead_gen'

@@ -6,11 +6,12 @@ interface AuthViewProps {
   language: Language;
   setLanguage: (lang: Language) => void;
   onLogin: (user: { name: string; email: string }) => void;
+  onBack?: () => void;
 }
 
 type AuthMode = 'login' | 'signup' | 'forgot';
 
-const AuthView: React.FC<AuthViewProps> = ({ language, setLanguage, onLogin }) => {
+const AuthView: React.FC<AuthViewProps> = ({ language, setLanguage, onLogin, onBack }) => {
   const t = useMemo(() => translations[language].auth, [language]);
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
@@ -52,8 +53,18 @@ const AuthView: React.FC<AuthViewProps> = ({ language, setLanguage, onLogin }) =
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-6 relative">
-      {/* Global Language Switcher */}
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6 relative">
+      {/* Top Header for Auth */}
+      <div className="absolute top-8 left-8">
+        <button 
+          onClick={onBack}
+          className="flex items-center gap-2 text-slate-400 hover:text-slate-900 transition-colors font-bold text-xs uppercase tracking-widest"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+          Back to Store
+        </button>
+      </div>
+
       <div className="absolute top-8 right-8 flex bg-white/50 backdrop-blur-md p-1 rounded-2xl border border-slate-200 shadow-sm z-10">
         <button 
           onClick={() => setLanguage('pt')}
@@ -158,7 +169,6 @@ const AuthView: React.FC<AuthViewProps> = ({ language, setLanguage, onLogin }) =
         </div>
       </div>
       
-      {/* Browser Language Detection Notice */}
       <div className="absolute bottom-8 text-slate-400 text-[10px] font-black uppercase tracking-[0.2em] animate-pulse">
         {language === 'pt' ? 'Idioma detectado automaticamente: Português' : 'Language auto-detected: English'}
       </div>

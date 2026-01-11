@@ -1,11 +1,12 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { AppTab, Product } from './types';
+import { AppTab, Product, Order } from './types';
 import Sidebar from './components/Sidebar';
 import ChatBot from './components/ChatBot';
 import ProductCatalogView from './components/ProductCatalogView';
 import StrategyView from './components/StrategyView';
 import LeadDiscoveryView from './components/LeadDiscoveryView';
+import OrdersView from './components/OrdersView';
 import AuthView from './components/AuthView';
 import { generateSystemPrompt, PRODUCT_CATALOG as INITIAL_CATALOG } from './constants';
 import { translations, Language } from './translations';
@@ -13,16 +14,16 @@ import { translations, Language } from './translations';
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.CHAT);
   const [products, setProducts] = useState<Product[]>(INITIAL_CATALOG);
-  const [language, setLanguage] = useState<Language>('en'); // Default to EN
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [language, setLanguage] = useState<Language>('en'); 
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [showAuthScreen, setShowAuthScreen] = useState(false);
 
   useEffect(() => {
-    // 1. Detect browser language
     const browserLang = navigator.language.toLowerCase();
     const detectedLang: Language = browserLang.startsWith('pt') ? 'pt' : 'en';
     
-    // 2. Check for saved language preference
     const savedLang = localStorage.getItem('gw_lang') as Language;
     if (savedLang) {
       setLanguage(savedLang);
@@ -30,11 +31,17 @@ const App: React.FC = () => {
       setLanguage(detectedLang);
     }
 
-    // 3. Check for existing session
     const savedUser = localStorage.getItem('gw_session');
     if (savedUser) {
       setUser(JSON.parse(savedUser));
     }
+
+    // Load orders
+    const savedOrders = localStorage.getItem('gw_orders');
+    if (savedOrders) {
+      setOrders(JSON.parse(savedOrders));
+    }
+
     setIsReady(true);
   }, []);
 
@@ -45,12 +52,22 @@ const App: React.FC = () => {
 
   const handleLogin = (userData: { name: string; email: string }) => {
     setUser(userData);
+    setShowAuthScreen(false);
     localStorage.setItem('gw_session', JSON.stringify(userData));
   };
 
   const handleLogout = () => {
     setUser(null);
+    setActiveTab(AppTab.CHAT);
     localStorage.removeItem('gw_session');
+  };
+
+  const handleOrderConfirmed = (order: Order) => {
+    setOrders(prev => {
+      const updated = [...prev, order];
+      localStorage.setItem('gw_orders', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   const t = useMemo(() => translations[language], [language]);
@@ -84,7 +101,7 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (activeTab) {
       case AppTab.CHAT:
-        return <ChatBot language={language} products={products} />;
+        return <ChatBot language={language} products={products} isAdmin={!!user} onAdminLoginRequest={() => setShowAuthScreen(true)} onOrderConfirmed={handleOrderConfirmed} />;
       case AppTab.CATALOG:
         return (
           <ProductCatalogView 
@@ -96,6 +113,8 @@ const App: React.FC = () => {
             language={language} 
           />
         );
+      case AppTab.ORDERS:
+        return <OrdersView orders={orders} language={language} />;
       case AppTab.LEAD_GEN:
         return <LeadDiscoveryView language={language} />;
       case AppTab.PROMPT:
@@ -113,16 +132,55 @@ const App: React.FC = () => {
       case AppTab.STRATEGY:
         return <StrategyView language={language} />;
       default:
-        return <ChatBot language={language} products={products} />;
+        return <ChatBot language={language} products={products} isAdmin={!!user} onOrderConfirmed={handleOrderConfirmed} />;
     }
   };
 
   if (!isReady) return null;
 
-  if (!user) {
-    return <AuthView language={language} setLanguage={handleSetLanguage} onLogin={handleLogin} />;
+  // If user wants to see the login screen
+  if (showAuthScreen && !user) {
+    return <AuthView language={language} setLanguage={handleSetLanguage} onLogin={handleLogin} onBack={() => setShowAuthScreen(false)} />;
   }
 
+  // If Public Mode (No user logged in)
+  if (!user) {
+    return (
+      <div className="bg-slate-50 min-h-screen flex flex-col">
+        <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center px-8 sticky top-0 z-50">
+          <div className="flex-1 flex items-center gap-3">
+             <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-100">G</div>
+             <div>
+               <h1 className="text-lg font-black text-slate-900 tracking-tight">Gadget Wall</h1>
+               <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">{t.sidebar.market}</p>
+             </div>
+          </div>
+          <div className="flex items-center gap-4">
+             <div className="hidden sm:flex bg-slate-100 p-1 rounded-xl">
+                <button onClick={() => handleSetLanguage('pt')} className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${language === 'pt' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400'}`}>PT</button>
+                <button onClick={() => handleSetLanguage('en')} className={`px-4 py-1.5 text-xs font-bold rounded-lg transition-all ${language === 'en' ? 'bg-white shadow-sm text-blue-600' : 'text-slate-400'}`}>EN</button>
+             </div>
+             <button 
+               onClick={() => setShowAuthScreen(true)}
+               className="bg-slate-900 text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200"
+             >
+               Staff Login
+             </button>
+          </div>
+        </header>
+        <div className="flex-1 max-w-5xl mx-auto w-full p-4 lg:p-10 flex flex-col">
+          <div className="flex-1 bg-white rounded-[3rem] shadow-2xl shadow-slate-200 border border-slate-100 overflow-hidden flex flex-col">
+             <ChatBot language={language} products={products} isAdmin={false} onOrderConfirmed={handleOrderConfirmed} />
+          </div>
+        </div>
+        <footer className="p-6 text-center">
+           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">© 2024 Gadget Wall Electronics • Porto, Portugal</p>
+        </footer>
+      </div>
+    );
+  }
+
+  // Admin Dashboard
   return (
     <div className="flex bg-slate-50 min-h-screen">
       <Sidebar 
@@ -140,6 +198,7 @@ const App: React.FC = () => {
             <h1 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">
               {activeTab === AppTab.CHAT && t.header.chat}
               {activeTab === AppTab.CATALOG && t.header.catalog}
+              {activeTab === AppTab.ORDERS && t.header.orders}
               {activeTab === AppTab.LEAD_GEN && t.header.leadGen}
               {activeTab === AppTab.PROMPT && t.header.prompt}
               {activeTab === AppTab.STRATEGY && t.header.strategy}
