@@ -18,6 +18,7 @@ const ProductCatalogView: React.FC<Props> = ({ products, onUpdateStock, onAddPro
   const [showInboundModal, setShowInboundModal] = useState(false);
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [showImportPreviewModal, setShowImportPreviewModal] = useState(false);
+  const [showLookupModal, setShowLookupModal] = useState(false);
   
   const [selectedProductId, setSelectedProductId] = useState<string>('');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -29,6 +30,8 @@ const ProductCatalogView: React.FC<Props> = ({ products, onUpdateStock, onAddPro
   const [currentScan, setCurrentScan] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchingBarcode, setIsSearchingBarcode] = useState(false);
+  const [lookupQuery, setLookupQuery] = useState('');
+  const [lookupResult, setLookupResult] = useState<Product | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // CSV Import State
@@ -245,6 +248,13 @@ const ProductCatalogView: React.FC<Props> = ({ products, onUpdateStock, onAddPro
     alert(t.importModal.success);
   };
 
+  const handleLookup = () => {
+    const found = products.find(p => 
+      p.serialNumbers?.some(sn => sn.trim() === lookupQuery.trim())
+    );
+    setLookupResult(found || null);
+  };
+
   return (
     <div className="p-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
@@ -293,6 +303,14 @@ const ProductCatalogView: React.FC<Props> = ({ products, onUpdateStock, onAddPro
         </div>
 
         <div className="flex gap-2">
+          <button 
+            onClick={() => { setLookupQuery(''); setLookupResult(null); setShowLookupModal(true); }}
+            className="whitespace-nowrap bg-blue-100 text-blue-700 hover:bg-blue-200 px-6 py-4 rounded-2xl font-bold transition-all flex items-center gap-2 border border-blue-200"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            {t.imeiLookupBtn}
+          </button>
+
           <label className="whitespace-nowrap bg-slate-100 hover:bg-slate-200 text-slate-700 px-6 py-4 rounded-2xl font-bold transition-all flex items-center gap-2 cursor-pointer border border-slate-200">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
             {t.importBtn}
@@ -428,6 +446,84 @@ const ProductCatalogView: React.FC<Props> = ({ products, onUpdateStock, onAddPro
           );
         })}
       </div>
+
+      {/* IMEI Lookup Modal */}
+      {showLookupModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4">
+          <div className="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95">
+            <div className="p-8 border-b border-slate-100 flex justify-between items-center">
+              <div>
+                <h3 className="text-2xl font-black text-slate-800">{t.lookupModalTitle}</h3>
+                <p className="text-slate-400 text-sm">{t.lookupModalSubtitle}</p>
+              </div>
+              <button onClick={() => setShowLookupModal(false)} className="text-slate-300 hover:text-slate-900">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <div className="p-8 space-y-6">
+              <div className="relative">
+                <input 
+                  type="text"
+                  value={lookupQuery}
+                  onChange={(e) => setLookupQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleLookup()}
+                  placeholder={t.lookupInputPlaceholder}
+                  className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-4 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all font-mono"
+                  autoFocus
+                />
+                <button 
+                  onClick={handleLookup}
+                  className="absolute right-2 top-2 bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-100"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                </button>
+              </div>
+
+              {lookupResult ? (
+                <div className="bg-blue-50/50 rounded-3xl p-6 border border-blue-100 animate-in slide-in-from-top-4">
+                  <div className="flex gap-4">
+                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center border border-blue-100 shadow-sm text-2xl">
+                      📱
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">{lookupResult.brand}</p>
+                      <h4 className="text-xl font-black text-slate-800">{lookupResult.name}</h4>
+                      <p className="text-sm text-slate-500 mt-1 leading-relaxed">{lookupResult.description}</p>
+                      
+                      <div className="mt-4 pt-4 border-t border-blue-100 flex justify-between items-end">
+                        <div>
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Price</p>
+                          <p className="text-2xl font-black text-slate-900">€{lookupResult.price.toFixed(2)}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Stock</p>
+                          <p className="text-lg font-black text-blue-600">{lookupResult.stock} Units</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setSearchQuery(lookupQuery);
+                      setShowLookupModal(false);
+                    }}
+                    className="w-full mt-6 bg-white border border-blue-200 text-blue-600 py-3 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-600 hover:text-white transition-all shadow-sm"
+                  >
+                    Focus in Catalog
+                  </button>
+                </div>
+              ) : lookupQuery && (
+                <div className="text-center py-8">
+                  <div className="w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg className="w-6 h-6 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 9.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  </div>
+                  <p className="text-slate-400 font-bold">{t.lookupNotFound}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Import Preview Modal */}
       {showImportPreviewModal && (
