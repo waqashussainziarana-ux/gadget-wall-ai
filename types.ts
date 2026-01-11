@@ -24,7 +24,7 @@ export interface ChatMessage {
 }
 
 export interface Lead {
-  id: string;
+  id?: string;
   sourceUrl: string;
   title: string;
   snippet: string;
