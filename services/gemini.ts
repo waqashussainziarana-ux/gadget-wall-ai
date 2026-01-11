@@ -4,17 +4,19 @@ import { generateSystemPrompt } from "../constants";
 import { Product } from "../types";
 
 export class SalesAgentService {
-  private ai: any;
   private chat: any;
 
-  constructor() {
-    this.ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+  // Initialize a new instance each time we need one to ensure we have the latest environment state
+  // Fix: Strictly follow initialization guideline by using process.env.API_KEY directly
+  private getAI() {
+    return new GoogleGenAI({ apiKey: process.env.API_KEY });
   }
 
   async startConversation(products: Product[]) {
+    const ai = this.getAI();
     const systemInstruction = generateSystemPrompt(products);
-    this.chat = this.ai.chats.create({
-      model: 'gemini-3-pro-preview',
+    this.chat = ai.chats.create({
+      model: 'gemini-3-flash-preview',
       config: {
         systemInstruction,
         temperature: 0.6,
@@ -26,12 +28,20 @@ export class SalesAgentService {
     if (!this.chat) {
       await this.startConversation(currentProducts);
     }
-    const response = await this.chat.sendMessage({ message });
-    return response.text;
+    try {
+      const response = await this.chat.sendMessage({ message });
+      return response.text;
+    } catch (error) {
+      console.error("Gemini Chat Error:", error);
+      // If the chat session is lost or errored, re-start it
+      await this.startConversation(currentProducts);
+      const retryResponse = await this.chat.sendMessage({ message });
+      return retryResponse.text;
+    }
   }
 
   async discoverLeads(query: string, lang: string) {
-    const aiInstance = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
+    const ai = this.getAI();
     
     const prompt = `
       Act as an AI Lead Discovery Engine for Gadget Wall, a mobile electronics business in Portugal.
@@ -48,46 +58,48 @@ export class SalesAgentService {
          - A "Fit Score" (1-100) based on Gadget Wall's catalog (phones and accessories)
          - A personalized outreach message in ${lang === 'pt' ? 'Portuguese (PT-PT)' : 'English'}.
       
-      Format your response as a JSON array of objects with fields: 
-      title, snippet, intentScore, fitScore, outreachMessage, sourceUrl, platform.
-      Ensure you extract real URLs from the search results.
+      IMPORTANT: Return ONLY a valid JSON array of objects.
+      Each object must have fields: title, snippet, intentScore, fitScore, outreachMessage, sourceUrl, platform.
     `;
 
-    const response = await aiInstance.models.generateContent({
-      model: "gemini-3-pro-preview",
-      contents: prompt,
-      config: {
-        tools: [{ googleSearch: {} }],
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING },
-              snippet: { type: Type.STRING },
-              intentScore: { type: Type.NUMBER },
-              fitScore: { type: Type.NUMBER },
-              outreachMessage: { type: Type.STRING },
-              sourceUrl: { type: Type.STRING },
-              platform: { type: Type.STRING }
-            },
-            required: ["title", "snippet", "intentScore", "fitScore", "outreachMessage", "sourceUrl", "platform"]
-          }
-        }
-      }
-    });
-
-    const results = JSON.parse(response.text || '[]');
-    const grounding = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-    if (grounding && Array.isArray(grounding)) {
-      results.forEach((res: any, idx: number) => {
-        if (!res.sourceUrl && grounding[idx]?.web?.uri) {
-          res.sourceUrl = grounding[idx].web.uri;
+    try {
+      // For Search Grounding, we use gemini-3-flash-preview as per text examples
+      // We also handle the possibility that response.text is not pure JSON
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt,
+        config: {
+          tools: [{ googleSearch: {} }],
         }
       });
+
+      const text = response.text || '[]';
+      // Attempt to find the JSON block in case there's surrounding text
+      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      const jsonStr = jsonMatch ? jsonMatch[0] : text;
+      
+      let results = [];
+      try {
+        results = JSON.parse(jsonStr);
+      } catch (e) {
+        console.warn("Could not parse leads JSON directly, falling back to empty list.", e);
+        results = [];
+      }
+
+      const grounding = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
+      if (grounding && Array.isArray(grounding)) {
+        // Enrich results with grounding URLs if missing
+        results.forEach((res: any, idx: number) => {
+          if (!res.sourceUrl && grounding[idx]?.web?.uri) {
+            res.sourceUrl = grounding[idx].web.uri;
+          }
+        });
+      }
+      return results;
+    } catch (error) {
+      console.error("Lead Discovery Error:", error);
+      throw error;
     }
-    return results;
   }
 }
 

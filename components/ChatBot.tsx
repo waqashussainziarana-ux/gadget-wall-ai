@@ -55,6 +55,15 @@ const ChatBot: React.FC<ChatBotProps> = ({ language, products, isAdmin = false, 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
+    if (!process.env.API_KEY) {
+      setMessages(prev => [...prev, { 
+        role: 'model', 
+        text: "Configuration Error: API Key is missing. Please check your environment variables.", 
+        timestamp: new Date() 
+      }]);
+      return;
+    }
+
     const userMsg: ChatMessage = { role: 'user', text: input, timestamp: new Date() };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
@@ -83,9 +92,18 @@ const ChatBot: React.FC<ChatBotProps> = ({ language, products, isAdmin = false, 
         // Delay invoice showing slightly for better flow
         setTimeout(() => setCurrentInvoice(data), 1000);
       }
-    } catch (error) {
-      console.error(error);
-      setMessages(prev => [...prev, { role: 'model', text: t.error, timestamp: new Date() }]);
+    } catch (error: any) {
+      console.error("Chat Error Detail:", error);
+      let errorText = t.error;
+      
+      // More descriptive error for common issues
+      if (error?.message?.includes('API key not valid')) {
+        errorText = "Invalid API Key. Please update your environment variables.";
+      } else if (error?.message?.includes('Requested entity was not found')) {
+        errorText = "The AI model is currently unavailable. Please try again later.";
+      }
+      
+      setMessages(prev => [...prev, { role: 'model', text: errorText, timestamp: new Date() }]);
     } finally {
       setIsLoading(false);
     }
