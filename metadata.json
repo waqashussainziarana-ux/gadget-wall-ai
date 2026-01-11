@@ -1,0 +1,7 @@
+{
+  "name": "Gadget Wall AI Sales Strategist",
+  "description": "An advanced AI sales agent tailored for the Portuguese and European mobile electronics market, specializing in phones and accessories with automated language adaptation and invoice generation.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

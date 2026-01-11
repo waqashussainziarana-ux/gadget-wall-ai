@@ -1,0 +1,263 @@
+
+export const translations = {
+  en: {
+    sidebar: {
+      chat: "Sales Agent Chat",
+      catalog: "Product Catalog",
+      prompt: "System Prompt",
+      strategy: "Sales Strategy",
+      leadGen: "Lead Discovery",
+      market: "Market: Portugal",
+      status: "Status: Production Ready",
+      brand: "Gadget Wall"
+    },
+    header: {
+      chat: "Sales Terminal",
+      catalog: "Inventory Management",
+      prompt: "Model Configuration",
+      strategy: "Strategic Dashboard",
+      leadGen: "Lead Discovery Engine",
+      hub: "Gadget Wall Hub",
+      time: "Lisbon Time (GMT+0)"
+    },
+    chat: {
+      welcome: "Hello! I am your Gadget Wall AI assistant. How can I help you today? Are you looking for a new phone or accessories?",
+      online: "Agent Online",
+      reset: "Reset Chat",
+      resetMsg: "Conversation reset. Ready to start again.",
+      placeholder: "Type your message here...",
+      tryQuery: "Try: \"Is the iPhone 17 Pro Max in stock?\"",
+      error: "Connection error with the sales server.",
+      processingError: "Sorry, I had trouble processing that.",
+      invoiceBtn: "View Invoice",
+      invoiceTitle: "Purchase Invoice"
+    },
+    catalog: {
+      title: "Inventory Management",
+      subtitle: "Stock control and IMEI registration",
+      searchPlaceholder: "Search by name, brand, barcode or IMEI/SN...",
+      scanSearch: "Scan Barcode to Search",
+      inboundBtn: "Stock Inbound",
+      importBtn: "Import CSV",
+      addProductBtn: "Add Product",
+      inStock: "IN STOCK",
+      brand: "Brand",
+      recentImeis: "Recent IMEIs",
+      matchedImei: "Matched IMEI/SN",
+      more: "more",
+      clearSearch: "Clear Search",
+      noProducts: "No products found matching",
+      modalTitle: "Stock Inbound",
+      modalSubtitle: "Register new units via Scanner or Bulk input",
+      targetProduct: "Target Product",
+      chooseProduct: "-- Choose a product from catalog --",
+      scannerTitle: "Barcode/IMEI Scanner",
+      startScanner: "Start Scanner",
+      stopScanner: "Stop Camera",
+      cameraOffline: "Camera Offline",
+      manualPlaceholder: "Type barcode/IMEI manually + Enter",
+      bulkTitle: "Bulk Import",
+      bulkPlaceholder: "Paste multiple IDs here... One per line.",
+      bulkTip: "Tip: You can copy-paste columns directly from Excel or CSV files.",
+      totalToAdd: "Total to add",
+      cancel: "Cancel",
+      confirm: "Confirm Inbound",
+      confirmDelete: "Are you sure you want to delete this product? This action cannot be undone.",
+      addProductModal: {
+        title: "Create New Product",
+        editTitle: "Edit Product",
+        name: "Product Name",
+        brand: "Brand",
+        category: "Category",
+        newCategory: "New Category Name",
+        price: "Price (€)",
+        stock: "Initial Stock",
+        barcode: "Barcode (Optional)",
+        desc: "Description",
+        save: "Create Product",
+        update: "Update Product"
+      },
+      importModal: {
+        title: "Import History & Stock",
+        desc: "Upload CSV following the hub standard format (IMEI based).",
+        selectFile: "Select CSV File",
+        previewTitle: "CSV Preview",
+        summaryFound: "Found {0} items for {1} unique products.",
+        importNow: "Import All Products",
+        success: "Products imported successfully!",
+        error: "Failed to parse CSV. Please check formatting."
+      }
+    },
+    strategy: {
+      title: "Gadget Wall Sales Strategy",
+      subtitle: "Designed for the European market with Portuguese priority.",
+      funnel: "Conversion Funnel",
+      steps: [
+        { title: "Discovery (The Greet)", desc: "Identifying user intent and model preference within 2 messages." },
+        { title: "Value Proposition (The Recommendation)", desc: "Mapping catalog items to user pain points (e.g. Battery life, Pro Camera)." },
+        { title: "Resistance Handling (The Pivot)", desc: "Addressing price or compatibility concerns with data-backed reassurance." },
+        { title: "Handoff (The Close)", desc: "Structured order summary ready for CRM or human escalation." }
+      ],
+      tactics: [
+        { title: "Portuguese Personalization", desc: "Uses PT-PT specific vocabulary (e.g., 'telemóvel' instead of 'celular') to build local trust." },
+        { title: "EU Compliance Focus", desc: "Highlights 3-year warranty and consumer rights early in the conversation to lower barriers." },
+        { title: "Accessory Bundling", desc: "Automatically triggers a companion product suggestion (Screen Protector/Case) once a phone is selected." },
+        { title: "Soft Scarcity", desc: "Mentions 'limited stock' only when truly below 10 units to maintain integrity." }
+      ]
+    },
+    prompt: {
+      title: "Production System Prompt",
+      note: "Note: This prompt is optimized for Gemini 3 Pro and includes explicit rules for Portuguese sales cultural nuances."
+    },
+    leadGen: {
+      title: "AI Lead Discovery",
+      subtitle: "Find customers looking for phones or wholesale stock across social media and search.",
+      searchPlaceholder: "e.g., 'People looking for used iPhone 15 in Lisbon' or 'Shops needing phone accessories in Spain'",
+      discoverBtn: "Discover Leads",
+      discoverySteps: {
+        sources: "Scanning Data Sources",
+        engine: "AI Discovery Engine Running",
+        scoring: "Calculating Intent & Fit",
+        outreach: "Generating Outreach Templates"
+      },
+      results: "Identified Leads",
+      intent: "Intent",
+      fit: "Fit",
+      message: "Outreach Message",
+      contact: "Contact via Link",
+      noLeads: "No leads discovered yet. Try a broader search query.",
+      searching: "AI is hunting for leads..."
+    }
+  },
+  pt: {
+    sidebar: {
+      chat: "Chat de Agente",
+      catalog: "Catálogo de Produtos",
+      prompt: "Instruções do Sistema",
+      strategy: "Estratégia de Vendas",
+      leadGen: "Descoberta de Leads",
+      market: "Mercado: Portugal",
+      status: "Estado: Pronto para Produção",
+      brand: "Gadget Wall"
+    },
+    header: {
+      chat: "Terminal de Vendas",
+      catalog: "Gestão de Inventário",
+      prompt: "Configuração do Modelo",
+      strategy: "Dashboard Estratégico",
+      leadGen: "Motor de Descoberta de Leads",
+      hub: "Gadget Wall Hub",
+      time: "Hora de Lisboa (GMT+0)"
+    },
+    chat: {
+      welcome: "Olá! Sou o seu assistente Gadget Wall AI. Como posso ajudar hoje? Procura um telemóvel novo ou acessórios?",
+      online: "Agente Online",
+      reset: "Reiniciar Chat",
+      resetMsg: "Conversa reiniciada. Pronto para começar de novo.",
+      placeholder: "Escreva a sua mensagem aqui...",
+      tryQuery: "Tente: \"O iPhone 17 Pro Max está em stock?\"",
+      error: "Erro de ligação com o servidor de vendas.",
+      processingError: "Desculpe, tive problemas ao processar o seu pedido.",
+      invoiceBtn: "Ver Fatura",
+      invoiceTitle: "Fatura de Compra"
+    },
+    catalog: {
+      title: "Gestão de Inventário",
+      subtitle: "Controlo de stock e registo de IMEIs",
+      searchPlaceholder: "Pesquisar por nome, marca, código de barras ou IMEI/SN...",
+      scanSearch: "Scan Barcode para Pesquisar",
+      inboundBtn: "Entrada de Stock",
+      importBtn: "Importar CSV",
+      addProductBtn: "Add Produto",
+      inStock: "EM STOCK",
+      brand: "Marca",
+      recentImeis: "IMEIs Recentes",
+      matchedImei: "IMEI/SN Encontrado",
+      more: "mais",
+      clearSearch: "Limpar Pesquisa",
+      noProducts: "Nenhum produto encontrado para",
+      modalTitle: "Entrada de Stock",
+      modalSubtitle: "Registe novas unidades via Scanner ou entrada em Bloco",
+      targetProduct: "Produto Alvo",
+      chooseProduct: "-- Escolha um produto do catálogo --",
+      scannerTitle: "Scanner de Barcode/IMEI",
+      startScanner: "Iniciar Scanner",
+      stopScanner: "Parar Câmara",
+      cameraOffline: "Câmara Offline",
+      manualPlaceholder: "Escreva barcode/IMEI manual + Enter",
+      bulkTitle: "Importação em Bloco",
+      bulkPlaceholder: "Cole aqui múltiplos IDs... Um por linha.",
+      bulkTip: "Dica: Pode copiar colunas diretamente do Excel ou CSV.",
+      totalToAdd: "Total a adicionar",
+      cancel: "Cancelar",
+      confirm: "Confirmar Entrada",
+      confirmDelete: "Tem a certeza que deseja eliminar este produto? Esta ação não pode ser desfeita.",
+      addProductModal: {
+        title: "Criar Novo Produto",
+        editTitle: "Editar Produto",
+        name: "Nome do Produto",
+        brand: "Marca",
+        category: "Categoria",
+        newCategory: "Nome da Nova Categoria",
+        price: "Preço (€)",
+        stock: "Stock Inicial",
+        barcode: "Código de Barras (Opcional)",
+        desc: "Descrição",
+        save: "Criar Produto",
+        update: "Atualizar Produto"
+      },
+      importModal: {
+        title: "Importar Histórico & Stock",
+        desc: "Carregue ficheiro CSV seguindo o padrão do hub (baseado em IMEI).",
+        selectFile: "Selecionar Ficheiro CSV",
+        previewTitle: "Pré-visualização CSV",
+        summaryFound: "Encontrados {0} itens para {1} produtos únicos.",
+        importNow: "Importar Todos os Produtos",
+        success: "Produtos importados com sucesso!",
+        error: "Erro ao ler CSV. Verifique a formatação."
+      }
+    },
+    strategy: {
+      title: "Estratégia de Vendas Gadget Wall",
+      subtitle: "Desenhado para o mercado Europeu com prioridade em Portugal.",
+      funnel: "Funil de Conversão",
+      steps: [
+        { title: "Descoberta (Saudação)", desc: "Identificar intenção e preferência de modelo em 2 mensagens." },
+        { title: "Proposta de Valor (Recomendação)", desc: "Mapear itens do catálogo para as necessidades do utilizador." },
+        { title: "Gestão de Resistência (Pivô)", desc: "Resolver dúvidas de preço ou compatibilidade com dados reais." },
+        { title: "Fecho (Entrega)", desc: "Resumo estruturado da encomenda pronto para CRM ou humano." }
+      ],
+      tactics: [
+        { title: "Personalização Portuguesa", desc: "Usa vocabulário específico PT-PT (ex: 'telemóvel') para criar confiança." },
+        { title: "Foco em Conformidade EU", desc: "Destaca garantia de 3 anos e direitos do consumidor para baixar barreiras." },
+        { title: "Pacotes de Acessórios", desc: "Sugere automaticamente capa/película assim que o telemóvel é escolhido." },
+        { title: "Escassez Suave", desc: "Menciona 'stock limitado' apenas quando abaixo de 10 unidades." }
+      ]
+    },
+    prompt: {
+      title: "Instruções do Sistema (Prompt)",
+      note: "Nota: Este prompt está otimizado para Gemini 3 Pro e inclui regras explícitas para para nuances culturais de vendas em Portugal."
+    },
+    leadGen: {
+      title: "Descoberta de Leads AI",
+      subtitle: "Encontre clientes à procura de telemóveis ou stock grossista em redes sociais e pesquisa.",
+      searchPlaceholder: "ex: 'Pessoas à procura de iPhone 15 em Lisboa' ou 'Lojas a precisar de acessórios em Espanha'",
+      discoverBtn: "Descobrir Leads",
+      discoverySteps: {
+        sources: "A verificar Fontes de Dados",
+        engine: "Motor de Descoberta AI em execução",
+        scoring: "A calcular Intenção e Ajuste",
+        outreach: "A gerar Modelos de Contacto"
+      },
+      results: "Leads Identificadas",
+      intent: "Intenção",
+      fit: "Ajuste",
+      message: "Mensagem de Contacto",
+      contact: "Contactar via Link",
+      noLeads: "Nenhuma lead descoberta ainda. Tente uma pesquisa mais abrangente.",
+      searching: "A IA está à caça de leads..."
+    }
+  }
+};
+
+export type Language = 'en' | 'pt';
