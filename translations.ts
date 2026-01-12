@@ -175,7 +175,14 @@ export const translations = {
       message: "Outreach Message",
       contact: "Contact via Link",
       noLeads: "No leads discovered yet. Try a broader search query.",
-      searching: "AI is hunting for leads..."
+      searching: "AI is hunting for leads...",
+      marketOutlook: "2026 Market Outlook",
+      realtimeActive: "January 2026 Live Analysis Active",
+      viewOriginal: "View Original Source",
+      contactName: "Contact",
+      phone: "Phone",
+      email: "Email",
+      copyDetails: "Copy Details"
     }
   },
   pt: {
@@ -243,7 +250,7 @@ export const translations = {
       total: "Total",
       status: "Estado",
       viewInvoice: "Ver",
-      confirmed: "Confirmada",
+      confirmed: "Confirmed",
       recent: "Transações Recentes"
     },
     catalog: {
@@ -256,7 +263,7 @@ export const translations = {
       importBtn: "Importar CSV",
       addProductBtn: "Add Produto",
       manageCategoriesBtn: "Gerir Categorias",
-      categoryModalTitle: "Categorias de Produtos",
+      categoryModalTitle: "Product Categories",
       categoryModalSubtitle: "Criar, renomear ou remover categorias",
       newCategoryPlaceholder: "Nome da categoria...",
       addCategoryBtn: "Adicionar Categoria",
@@ -353,7 +360,14 @@ export const translations = {
       message: "Mensagem de Contacto",
       contact: "Contactar via Link",
       noLeads: "Nenhuma lead descoberta ainda. Tente uma pesquisa mais abrangente.",
-      searching: "A IA está à caça de leads..."
+      searching: "A IA está à caça de leads...",
+      marketOutlook: "Perspetiva de Mercado 2026",
+      realtimeActive: "Análise em Tempo Real Jan 2026 Ativa",
+      viewOriginal: "Ver Fonte Original",
+      contactName: "Contacto",
+      phone: "Telefone",
+      email: "Email",
+      copyDetails: "Copiar Detalhes"
     }
   }
 };

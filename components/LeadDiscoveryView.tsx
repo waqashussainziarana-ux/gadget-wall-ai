@@ -12,6 +12,7 @@ const LeadDiscoveryView: React.FC<LeadDiscoveryViewProps> = ({ language }) => {
   const t = useMemo(() => translations[language].leadGen, [language]);
   const [query, setQuery] = useState('');
   const [leads, setLeads] = useState<Lead[]>([]);
+  const [marketOutlook, setMarketOutlook] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -27,14 +28,16 @@ const LeadDiscoveryView: React.FC<LeadDiscoveryViewProps> = ({ language }) => {
     if (!query.trim() || isLoading) return;
     setIsLoading(true);
     setLeads([]);
+    setMarketOutlook('');
     
     const stepInterval = setInterval(() => {
       setCurrentStep(prev => (prev < 3 ? prev + 1 : prev));
     }, 1500);
 
     try {
-      const discoveredLeads = await salesService.discoverLeads(query, language);
-      setLeads(discoveredLeads);
+      const result = await salesService.discoverLeads(query, language);
+      setLeads(result.leads || []);
+      setMarketOutlook(result.marketOutlook || '');
     } catch (error) {
       console.error(error);
       alert("Error searching for leads. Please check your API key.");
@@ -46,23 +49,49 @@ const LeadDiscoveryView: React.FC<LeadDiscoveryViewProps> = ({ language }) => {
   };
 
   const handleContact = (lead: Lead) => {
+    // Copy message to clipboard
     navigator.clipboard.writeText(lead.outreachMessage);
     setCopiedId(lead.id || lead.sourceUrl);
     setTimeout(() => setCopiedId(null), 3000);
 
-    if (lead.sourceUrl) {
-      window.open(lead.sourceUrl, '_blank', 'noopener,noreferrer');
+    // Ensure we have a valid URL before opening
+    const url = lead.sourceUrl?.trim();
+    if (url && (url.startsWith('http') || url.startsWith('www'))) {
+      const targetUrl = url.startsWith('www') ? `https://${url}` : url;
+      window.open(targetUrl, '_blank', 'noopener,noreferrer');
     } else {
-      alert("Source link not available for this lead.");
+      console.warn("Invalid Source URL:", lead.sourceUrl);
+      alert("Source link not available or invalid for this lead.");
     }
+  };
+
+  const copyContactInfo = (lead: Lead) => {
+    const info = `
+Name: ${lead.contactName || 'N/A'}
+Phone: ${lead.phone || 'N/A'}
+Email: ${lead.email || 'N/A'}
+Platform: ${lead.platform || 'N/A'}
+Source: ${lead.sourceUrl || 'N/A'}
+    `.trim();
+    navigator.clipboard.writeText(info);
+    alert("Contact details copied to clipboard!");
   };
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8 p-4 sm:p-6 lg:p-8">
-      <div className="bg-white rounded-2xl sm:rounded-[3rem] p-6 sm:p-12 shadow-xl shadow-slate-200 border border-slate-100">
+      <div className="bg-white rounded-2xl sm:rounded-[3rem] p-6 sm:p-12 shadow-xl shadow-slate-200 border border-slate-100 relative overflow-hidden">
+        {/* 2026 Enhanced Badge */}
+        <div className="absolute top-0 right-0 bg-blue-600 text-white text-[8px] sm:text-[10px] font-black uppercase tracking-[0.2em] px-6 py-2 rotate-45 translate-x-12 translate-y-4 shadow-lg">
+          Jan 2026 Data
+        </div>
+
         <div className="max-w-3xl">
           <h2 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight mb-2 sm:mb-4">{t.title}</h2>
           <p className="text-slate-500 text-sm sm:text-lg leading-relaxed">{t.subtitle}</p>
+          <div className="flex items-center gap-2 mt-4">
+             <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+             <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{t.realtimeActive}</p>
+          </div>
         </div>
 
         <div className="mt-6 sm:mt-10 relative">
@@ -114,6 +143,18 @@ const LeadDiscoveryView: React.FC<LeadDiscoveryViewProps> = ({ language }) => {
         </div>
       </div>
 
+      {marketOutlook && (
+        <div className="bg-slate-900 rounded-2xl sm:rounded-[2.5rem] p-6 sm:p-8 text-white shadow-2xl animate-in slide-in-from-bottom-4 border border-slate-800">
+           <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center text-sm">📈</div>
+              <h3 className="font-black uppercase tracking-widest text-[10px] sm:text-xs text-blue-400">{t.marketOutlook}</h3>
+           </div>
+           <p className="text-sm sm:text-lg font-medium leading-relaxed italic text-slate-300">
+             "{marketOutlook}"
+           </p>
+        </div>
+      )}
+
       {leads.length > 0 && (
         <div className="space-y-4 sm:space-y-6">
           <h3 className="text-xl sm:text-2xl font-black text-slate-800 px-2 sm:px-4 flex items-center gap-2 sm:gap-3">
@@ -134,7 +175,14 @@ const LeadDiscoveryView: React.FC<LeadDiscoveryViewProps> = ({ language }) => {
                       </div>
                       <div className="overflow-hidden">
                         <h4 className="font-black text-slate-800 leading-tight truncate text-sm sm:text-base">{lead.title}</h4>
-                        <p className="text-[8px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1 truncate">{lead.platform || 'General Search'}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <p className="text-[8px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-widest truncate">{lead.platform || 'General Search'}</p>
+                          {lead.sourceUrl && (
+                            <a href={lead.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-600 transition-colors">
+                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" strokeWidth="2.5" strokeLinecap="round"/></svg>
+                            </a>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="flex gap-1.5 sm:gap-2">
@@ -144,18 +192,36 @@ const LeadDiscoveryView: React.FC<LeadDiscoveryViewProps> = ({ language }) => {
                           {lead.intentScore}
                         </div>
                       </div>
-                      <div className="flex flex-col items-center">
-                        <div className="text-[7px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-tighter mb-0.5 sm:mb-1">{t.fit}</div>
-                        <div className={`text-[10px] sm:text-sm font-black w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center border-2 ${lead.fitScore > 80 ? 'border-green-500 text-green-600' : 'border-blue-500 text-blue-600'}`}>
-                          {lead.fitScore}
-                        </div>
-                      </div>
                     </div>
                   </div>
 
                   <p className="text-slate-600 text-xs sm:text-sm italic mb-4 sm:mb-6 leading-relaxed bg-slate-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-100">
                     "{lead.snippet}"
                   </p>
+
+                  {/* Scraped Contact Details Section */}
+                  <div className="mb-6 p-4 bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-800 space-y-3 relative group/contact">
+                    <div className="flex justify-between items-center mb-1">
+                      <h5 className="text-[9px] font-black text-blue-400 uppercase tracking-widest">{t.contactName}</h5>
+                      <button onClick={() => copyContactInfo(lead)} className="text-[8px] font-bold text-slate-400 hover:text-white uppercase tracking-tighter">
+                        {t.copyDetails}
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 gap-2">
+                       <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-slate-800 flex items-center justify-center text-[10px]">👤</div>
+                          <span className="text-[10px] sm:text-xs font-bold text-white truncate">{lead.contactName || '---'}</span>
+                       </div>
+                       <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-slate-800 flex items-center justify-center text-[10px]">📞</div>
+                          <span className="text-[10px] sm:text-xs font-mono font-bold text-blue-300 truncate">{lead.phone || '---'}</span>
+                       </div>
+                       <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-slate-800 flex items-center justify-center text-[10px]">✉️</div>
+                          <span className="text-[10px] sm:text-xs font-mono font-bold text-slate-300 truncate">{lead.email || '---'}</span>
+                       </div>
+                    </div>
+                  </div>
 
                   <div className="space-y-2 sm:space-y-3 flex-1">
                     <label className="text-[8px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">{t.message}</label>
@@ -180,15 +246,17 @@ const LeadDiscoveryView: React.FC<LeadDiscoveryViewProps> = ({ language }) => {
                   </div>
 
                   <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <a 
-                      href={lead.sourceUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-[10px] sm:text-xs font-bold text-slate-400 hover:text-blue-600 transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                      View Original Source
-                    </a>
+                    {lead.sourceUrl && (
+                      <a 
+                        href={lead.sourceUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-[10px] sm:text-xs font-bold text-slate-400 hover:text-blue-600 transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                        {t.viewOriginal}
+                      </a>
+                    )}
                     
                     <button 
                       onClick={() => handleContact(lead)}

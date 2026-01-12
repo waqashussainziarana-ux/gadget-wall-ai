@@ -84,18 +84,26 @@ const ChatBot: React.FC<ChatBotProps> = ({ language, products, isAdmin = false, 
       }
     } catch (error: any) {
       console.error("Chat Error Detail:", error);
-      let errorText = t.error;
       
-      // Check for common API errors rather than checking variable existence
-      if (error?.message?.includes('API key not valid')) {
-        errorText = "Invalid API Key. Please verify your Gemini API key in the environment settings.";
-      } else if (error?.message?.includes('Requested entity was not found')) {
-        errorText = "The AI model is currently unavailable or the API key does not have access to it.";
-      } else if (error?.message?.includes('fetch')) {
-        errorText = "Network error: Unable to connect to the AI service.";
+      let errorMessage = t.error; // Default translated error
+      
+      // Attempt to find a more specific error message from the Gemini SDK
+      if (error?.message) {
+        if (error.message.includes('API key not valid')) {
+          errorMessage = "Invalid API Key. Please verify the API_KEY in your project settings.";
+        } else if (error.message.includes('Requested entity was not found')) {
+          errorMessage = "AI Model error: The requested model is not found or your key lacks access.";
+        } else if (error.message.includes('fetch') || error.message.includes('network')) {
+          errorMessage = "Network error: Connection to the AI service timed out or was blocked.";
+        } else if (error.message.includes('API_KEY') || error.message.includes('apiKey')) {
+          errorMessage = "Configuration error: The API_KEY environment variable is not set correctly.";
+        } else {
+          // Provide the actual error string for easier debugging by the developer
+          errorMessage = `Service Error: ${error.message}`;
+        }
       }
       
-      setMessages(prev => [...prev, { role: 'model', text: errorText, timestamp: new Date() }]);
+      setMessages(prev => [...prev, { role: 'model', text: errorMessage, timestamp: new Date() }]);
     } finally {
       setIsLoading(false);
     }

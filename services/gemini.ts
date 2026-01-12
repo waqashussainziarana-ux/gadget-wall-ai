@@ -7,9 +7,7 @@ export class SalesAgentService {
   private chat: any;
 
   private getAI() {
-    // The environment is expected to provide this key.
-    // We use it directly to initialize the SDK.
-    return new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
+    return new GoogleGenAI({ apiKey: process.env.API_KEY });
   }
 
   async startConversation(products: Product[]) {
@@ -41,14 +39,11 @@ export class SalesAgentService {
       return response.text;
     } catch (error: any) {
       console.error("Gemini Chat Error:", error);
-      
-      // Attempt to restart session if it's a state-related error
-      if (error?.message?.includes('400') || error?.message?.includes('expired')) {
+      if (error?.message?.includes('400') || error?.message?.includes('expired') || error?.message?.includes('not found')) {
         await this.startConversation(currentProducts);
         const retryResponse = await this.chat.sendMessage({ message });
         return retryResponse.text;
       }
-      
       throw error;
     }
   }
@@ -57,54 +52,76 @@ export class SalesAgentService {
     const ai = this.getAI();
     
     const prompt = `
-      Act as an AI Lead Discovery Engine for Gadget Wall, a mobile electronics business in Portugal.
-      User Query: "${query}"
-      Target Language: ${lang}
+      Act as an AI Lead Scraper and Market Intelligence Engine for Gadget Wall (Portugal).
+      Current Date: January 2026.
+      Query: "${query}"
+      Target: Portugal / Europe.
 
-      Perform the following actions:
-      1. Search for potential customers, retail buyers, or B2B shop owners looking for mobile phones or accessories in Europe (focusing on Portugal/Spain).
-      2. Analyze search results to identify "High Intent" leads (e.g., social media posts, forum questions, marketplace requests).
-      3. For each found lead, provide:
-         - A title/name
-         - A snippet of their request
-         - An "Intent Score" (1-100)
-         - A "Fit Score" (1-100) based on Gadget Wall's catalog (phones and accessories)
-         - A personalized outreach message in ${lang === 'pt' ? 'Portuguese (PT-PT)' : 'English'}.
-      
-      IMPORTANT: Return ONLY a valid JSON array of objects.
-      Each object must have fields: title, snippet, intentScore, fitScore, outreachMessage, sourceUrl, platform.
+      INSTRUCTIONS:
+      1. Use Google Search to find real, active leads from January 2026.
+      2. SCRAPE EVERYTHING: Look for publicly available contact details in snippets, descriptions, or forum signatures.
+      3. For each lead, try to identify:
+         - contactName: Person or business name.
+         - email: Publicly listed email (if available).
+         - phone: Publicly listed phone number (if available).
+         - platform: Where the lead was found (OLX, CustoJusto, Facebook, LinkedIn, Forum, etc.).
+         - sourceUrl: The direct link to the post/profile.
+
+      FORMAT:
+      Return a JSON object:
+      {
+        "marketOutlook": "Short trend summary for Jan 2026",
+        "leads": [
+          {
+            "title": "Lead Title",
+            "snippet": "Original post content",
+            "contactName": "...",
+            "email": "...",
+            "phone": "...",
+            "intentScore": 1-100,
+            "fitScore": 1-100,
+            "outreachMessage": "Personalized message in ${lang === 'pt' ? 'Portuguese' : 'English'}",
+            "platform": "...",
+            "sourceUrl": "..." 
+          }
+        ]
+      }
+
+      IMPORTANT: If a specific piece of contact data isn't found, leave it empty. Ensure sourceUrl is ALWAYS populated using the search results.
     `;
 
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-3-pro-preview",
         contents: prompt,
         config: {
           tools: [{ googleSearch: {} }],
         }
       });
 
-      const text = response.text || '[]';
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
+      const text = response.text || '{}';
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
       const jsonStr = jsonMatch ? jsonMatch[0] : text;
       
-      let results = [];
+      let parsed;
       try {
-        results = JSON.parse(jsonStr);
+        parsed = JSON.parse(jsonStr);
       } catch (e) {
-        console.warn("Could not parse leads JSON directly, falling back to empty list.", e);
-        results = [];
+        parsed = { marketOutlook: "Analysis incomplete.", leads: [] };
       }
 
+      // Ensure every lead has a sourceUrl from grounding if missing
       const grounding = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-      if (grounding && Array.isArray(grounding)) {
-        results.forEach((res: any, idx: number) => {
-          if (!res.sourceUrl && grounding[idx]?.web?.uri) {
-            res.sourceUrl = grounding[idx].web.uri;
+      if (grounding && Array.isArray(grounding) && parsed.leads) {
+        parsed.leads.forEach((res: any, idx: number) => {
+          // If the AI didn't provide a direct URL, map it from search grounding
+          if (!res.sourceUrl || res.sourceUrl === '...') {
+             const chunk = grounding[idx] || grounding[0]; // Fallback to first source if index mismatch
+             res.sourceUrl = chunk?.web?.uri || '';
           }
         });
       }
-      return results;
+      return parsed;
     } catch (error) {
       console.error("Lead Discovery Error:", error);
       throw error;

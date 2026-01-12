@@ -41,6 +41,9 @@ export interface Lead {
   fitScore: number;
   outreachMessage: string;
   platform: string;
+  email?: string;
+  phone?: string;
+  contactName?: string;
 }
 
 export enum AppTab {
