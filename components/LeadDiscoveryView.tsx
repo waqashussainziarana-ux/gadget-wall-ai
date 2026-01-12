@@ -40,7 +40,7 @@ const LeadDiscoveryView: React.FC<LeadDiscoveryViewProps> = ({ language }) => {
       setMarketOutlook(result.marketOutlook || '');
     } catch (error) {
       console.error(error);
-      alert("Error searching for leads. Please check your API key.");
+      alert("Connectivity Error: The system connects to the sales server automatically. Ensure your network allows access to the Gemini API.");
     } finally {
       setIsLoading(false);
       setCurrentStep(0);
@@ -48,21 +48,11 @@ const LeadDiscoveryView: React.FC<LeadDiscoveryViewProps> = ({ language }) => {
     }
   };
 
-  const handleContact = (lead: Lead) => {
-    // Copy message to clipboard
+  const copyOutreach = (lead: Lead) => {
     navigator.clipboard.writeText(lead.outreachMessage);
-    setCopiedId(lead.id || lead.sourceUrl);
+    const leadId = lead.id || lead.sourceUrl;
+    setCopiedId(leadId);
     setTimeout(() => setCopiedId(null), 3000);
-
-    // Ensure we have a valid URL before opening
-    const url = lead.sourceUrl?.trim();
-    if (url && (url.startsWith('http') || url.startsWith('www'))) {
-      const targetUrl = url.startsWith('www') ? `https://${url}` : url;
-      window.open(targetUrl, '_blank', 'noopener,noreferrer');
-    } else {
-      console.warn("Invalid Source URL:", lead.sourceUrl);
-      alert("Source link not available or invalid for this lead.");
-    }
   };
 
   const copyContactInfo = (lead: Lead) => {
@@ -74,7 +64,15 @@ Platform: ${lead.platform || 'N/A'}
 Source: ${lead.sourceUrl || 'N/A'}
     `.trim();
     navigator.clipboard.writeText(info);
-    alert("Contact details copied to clipboard!");
+    alert("Full contact details copied to clipboard!");
+  };
+
+  const formatUrl = (url: string) => {
+    if (!url || url === 'N/A' || url === '...') return "#";
+    const trimmed = url.trim();
+    if (trimmed.startsWith('http')) return trimmed;
+    if (trimmed.startsWith('www')) return `https://${trimmed}`;
+    return `https://${trimmed}`;
   };
 
   return (
@@ -165,6 +163,7 @@ Source: ${lead.sourceUrl || 'N/A'}
             {leads.map((lead, idx) => {
               const leadId = lead.id || lead.sourceUrl;
               const isCopied = copiedId === leadId;
+              const leadUrl = formatUrl(lead.sourceUrl);
               
               return (
                 <div key={idx} className="bg-white rounded-2xl sm:rounded-[2.5rem] border border-slate-100 p-6 sm:p-8 shadow-sm hover:shadow-xl transition-all group flex flex-col relative overflow-hidden">
@@ -177,11 +176,6 @@ Source: ${lead.sourceUrl || 'N/A'}
                         <h4 className="font-black text-slate-800 leading-tight truncate text-sm sm:text-base">{lead.title}</h4>
                         <div className="flex items-center gap-2 mt-1">
                           <p className="text-[8px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-widest truncate">{lead.platform || 'General Search'}</p>
-                          {lead.sourceUrl && (
-                            <a href={lead.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-600 transition-colors">
-                               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" strokeWidth="2.5" strokeLinecap="round"/></svg>
-                            </a>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -199,8 +193,8 @@ Source: ${lead.sourceUrl || 'N/A'}
                     "{lead.snippet}"
                   </p>
 
-                  {/* Scraped Contact Details Section */}
-                  <div className="mb-6 p-4 bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-800 space-y-3 relative group/contact">
+                  {/* Contact Scraper Results */}
+                  <div className="mb-6 p-4 bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-800 space-y-3 relative">
                     <div className="flex justify-between items-center mb-1">
                       <h5 className="text-[9px] font-black text-blue-400 uppercase tracking-widest">{t.contactName}</h5>
                       <button onClick={() => copyContactInfo(lead)} className="text-[8px] font-bold text-slate-400 hover:text-white uppercase tracking-tighter">
@@ -228,11 +222,7 @@ Source: ${lead.sourceUrl || 'N/A'}
                     <div className="bg-blue-50 p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-blue-100 text-blue-900 text-[10px] sm:text-sm leading-relaxed relative group/msg">
                       {lead.outreachMessage}
                       <button 
-                        onClick={() => {
-                          navigator.clipboard.writeText(lead.outreachMessage);
-                          setCopiedId(leadId);
-                          setTimeout(() => setCopiedId(null), 2000);
-                        }}
+                        onClick={() => copyOutreach(lead)}
                         className="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 p-1.5 sm:p-2 bg-white rounded-lg sm:rounded-xl shadow-sm border border-blue-100 text-blue-400 hover:text-blue-600 transition-all opacity-0 group-hover/msg:opacity-100"
                         title="Copy Message"
                       >
@@ -246,9 +236,9 @@ Source: ${lead.sourceUrl || 'N/A'}
                   </div>
 
                   <div className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-slate-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    {lead.sourceUrl && (
+                    {lead.sourceUrl && lead.sourceUrl !== 'N/A' && (
                       <a 
-                        href={lead.sourceUrl} 
+                        href={leadUrl} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 text-[10px] sm:text-xs font-bold text-slate-400 hover:text-blue-600 transition-colors"
@@ -258,26 +248,31 @@ Source: ${lead.sourceUrl || 'N/A'}
                       </a>
                     )}
                     
-                    <button 
-                      onClick={() => handleContact(lead)}
-                      className={`w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-widest shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 ${
-                        isCopied 
-                        ? 'bg-green-500 text-white shadow-green-100' 
-                        : 'bg-blue-600 text-white shadow-blue-100 hover:bg-blue-700'
-                      }`}
-                    >
-                      {isCopied ? (
-                        <>
-                          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
-                          Copied...
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
-                          {t.contact}
-                        </>
-                      )}
-                    </button>
+                    {lead.sourceUrl && lead.sourceUrl !== 'N/A' && (
+                      <a 
+                        href={leadUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => copyOutreach(lead)}
+                        className={`w-full sm:w-auto px-6 sm:px-8 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-widest shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2 ${
+                          isCopied 
+                          ? 'bg-green-500 text-white shadow-green-100' 
+                          : 'bg-blue-600 text-white shadow-blue-100 hover:bg-blue-700'
+                        }`}
+                      >
+                        {isCopied ? (
+                          <>
+                            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                            Copied & Opening...
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                            {t.contact}
+                          </>
+                        )}
+                      </a>
+                    )}
                   </div>
                 </div>
               );

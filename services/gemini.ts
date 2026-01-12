@@ -7,6 +7,8 @@ export class SalesAgentService {
   private chat: any;
 
   private getAI() {
+    // Note: The API Key is automatically managed via the system environment (process.env.API_KEY).
+    // This ensures secure connection to Gemini Pro and Flash models without hardcoding secrets.
     return new GoogleGenAI({ apiKey: process.env.API_KEY });
   }
 
@@ -52,42 +54,39 @@ export class SalesAgentService {
     const ai = this.getAI();
     
     const prompt = `
-      Act as an AI Lead Scraper and Market Intelligence Engine for Gadget Wall (Portugal).
-      Current Date: January 2026.
-      Query: "${query}"
-      Target: Portugal / Europe.
+      Act as an advanced OSINT Lead Discovery & Contact Scraper for Gadget Wall Portugal.
+      Context: We are in January 2026.
+      Goal: Find specific high-intent sales leads in Portugal/Europe for mobile devices (iPhone 15-17, Samsung S24-26).
+      User Query: "${query}"
 
-      INSTRUCTIONS:
-      1. Use Google Search to find real, active leads from January 2026.
-      2. SCRAPE EVERYTHING: Look for publicly available contact details in snippets, descriptions, or forum signatures.
-      3. For each lead, try to identify:
-         - contactName: Person or business name.
-         - email: Publicly listed email (if available).
-         - phone: Publicly listed phone number (if available).
-         - platform: Where the lead was found (OLX, CustoJusto, Facebook, LinkedIn, Forum, etc.).
-         - sourceUrl: The direct link to the post/profile.
+      SEARCH PROTOCOL:
+      1. Scan OLX.pt, CustoJusto, Reddit, Zwame, and social media footprints via Google Search.
+      2. TARGET DATA: For every lead found, SCRAPE and prioritize finding:
+         - Username/Contact Name
+         - Phone Number (look for WhatsApp/Telegram indicators)
+         - Email address if present in public text
+         - Platform source (e.g. OLX, Twitter, LinkedIn)
+         - The direct URL to the lead post
 
-      FORMAT:
-      Return a JSON object:
+      FORMAT (JSON ONLY):
       {
-        "marketOutlook": "Short trend summary for Jan 2026",
+        "marketOutlook": "Summary of 2026 trends for this query.",
         "leads": [
           {
-            "title": "Lead Title",
+            "id": "unique-id-123",
+            "title": "Lead summary",
             "snippet": "Original post content",
-            "contactName": "...",
-            "email": "...",
-            "phone": "...",
+            "contactName": "Name or Username",
+            "email": "Email or 'N/A'",
+            "phone": "Phone or 'N/A'",
+            "platform": "Platform name",
+            "sourceUrl": "The direct URL",
             "intentScore": 1-100,
             "fitScore": 1-100,
-            "outreachMessage": "Personalized message in ${lang === 'pt' ? 'Portuguese' : 'English'}",
-            "platform": "...",
-            "sourceUrl": "..." 
+            "outreachMessage": "Personalized template in ${lang === 'pt' ? 'Portuguese' : 'English'}"
           }
         ]
       }
-
-      IMPORTANT: If a specific piece of contact data isn't found, leave it empty. Ensure sourceUrl is ALWAYS populated using the search results.
     `;
 
     try {
@@ -110,20 +109,21 @@ export class SalesAgentService {
         parsed = { marketOutlook: "Analysis incomplete.", leads: [] };
       }
 
-      // Ensure every lead has a sourceUrl from grounding if missing
-      const grounding = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
-      if (grounding && Array.isArray(grounding) && parsed.leads) {
-        parsed.leads.forEach((res: any, idx: number) => {
-          // If the AI didn't provide a direct URL, map it from search grounding
-          if (!res.sourceUrl || res.sourceUrl === '...') {
-             const chunk = grounding[idx] || grounding[0]; // Fallback to first source if index mismatch
-             res.sourceUrl = chunk?.web?.uri || '';
+      // GROUNDING: Extract verified source URLs from Google Search metadata if the model output is missing them
+      const chunks = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+      if (parsed.leads && Array.isArray(parsed.leads)) {
+        parsed.leads = parsed.leads.map((lead: any, index: number) => {
+          if (!lead.sourceUrl || lead.sourceUrl === '...' || lead.sourceUrl === 'N/A') {
+             const chunk = chunks[index] || chunks[0];
+             lead.sourceUrl = chunk?.web?.uri || lead.sourceUrl;
           }
+          return lead;
         });
       }
+
       return parsed;
     } catch (error) {
-      console.error("Lead Discovery Error:", error);
+      console.error("Discovery Error:", error);
       throw error;
     }
   }
