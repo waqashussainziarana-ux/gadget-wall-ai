@@ -7,11 +7,9 @@ export class SalesAgentService {
   private chat: any;
 
   private getAI() {
-    const apiKey = process.env.API_KEY;
-    if (!apiKey) {
-      console.error("Gemini API Key is missing. Please set API_KEY environment variable.");
-    }
-    return new GoogleGenAI({ apiKey: apiKey || "" });
+    // The environment is expected to provide this key.
+    // We use it directly to initialize the SDK.
+    return new GoogleGenAI({ apiKey: process.env.API_KEY || "" });
   }
 
   async startConversation(products: Product[]) {
@@ -44,7 +42,7 @@ export class SalesAgentService {
     } catch (error: any) {
       console.error("Gemini Chat Error:", error);
       
-      // If session expired or specific error, attempt one restart
+      // Attempt to restart session if it's a state-related error
       if (error?.message?.includes('400') || error?.message?.includes('expired')) {
         await this.startConversation(currentProducts);
         const retryResponse = await this.chat.sendMessage({ message });

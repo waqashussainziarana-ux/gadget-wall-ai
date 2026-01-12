@@ -86,15 +86,13 @@ const ChatBot: React.FC<ChatBotProps> = ({ language, products, isAdmin = false, 
       console.error("Chat Error Detail:", error);
       let errorText = t.error;
       
-      // More descriptive error for common issues
-      if (!process.env.API_KEY || process.env.API_KEY === "") {
-        errorText = "API Key is missing. Please ensure API_KEY is set in your environment variables.";
-      } else if (error?.message?.includes('API key not valid')) {
-        errorText = "Invalid API Key. Please verify your Gemini API key in the settings.";
+      // Check for common API errors rather than checking variable existence
+      if (error?.message?.includes('API key not valid')) {
+        errorText = "Invalid API Key. Please verify your Gemini API key in the environment settings.";
       } else if (error?.message?.includes('Requested entity was not found')) {
-        errorText = "The AI model 'gemini-3-flash-preview' was not found or is unavailable.";
+        errorText = "The AI model is currently unavailable or the API key does not have access to it.";
       } else if (error?.message?.includes('fetch')) {
-        errorText = "Network error: Unable to connect to the AI service. Please check your internet connection.";
+        errorText = "Network error: Unable to connect to the AI service.";
       }
       
       setMessages(prev => [...prev, { role: 'model', text: errorText, timestamp: new Date() }]);
