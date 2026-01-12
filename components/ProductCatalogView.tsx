@@ -342,7 +342,7 @@ const ProductCatalogView: React.FC<Props> = ({
             className="flex-1 sm:flex-none justify-center whitespace-nowrap bg-slate-800 text-white hover:bg-slate-900 px-4 sm:px-6 py-2.5 sm:py-4 rounded-xl sm:rounded-2xl font-bold transition-all flex items-center gap-2 border border-slate-700 text-xs sm:text-sm"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7" strokeWidth="2.5" strokeLinecap="round"/></svg>
-            <span className="truncate">{language === 'pt' ? 'Gerir Categorias' : 'Manage Categories'}</span>
+            <span className="truncate">{t.manageCategoriesBtn}</span>
           </button>
 
           <button 
@@ -453,7 +453,7 @@ const ProductCatalogView: React.FC<Props> = ({
                 {product.serialNumbers && product.serialNumbers.length > 0 && (
                   <div className="mt-2 p-2 sm:p-3 bg-slate-50 rounded-xl sm:rounded-2xl border border-slate-100">
                     <p className="text-[8px] sm:text-[10px] font-bold text-slate-400 mb-1 sm:mb-2 uppercase tracking-widest">{t.recentImeis}:</p>
-                    <div className="flex flex-wrap gap-1 sm:gap-1.5">
+                    <div className="flex flex-wrap gap-1.5 sm:gap-1.5">
                       {product.serialNumbers.slice(-3).map((sn, idx) => (
                         <span key={idx} className={`text-[8px] sm:text-[10px] border px-1.5 py-0.5 rounded-md sm:rounded-lg font-mono transition-colors ${sn === matchedSN ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-slate-200 text-slate-600'}`}>
                           {sn.slice(-6)}...
@@ -494,8 +494,8 @@ const ProductCatalogView: React.FC<Props> = ({
           <div className="bg-white w-full max-w-2xl rounded-2xl sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95">
             <div className="p-6 sm:p-8 border-b border-slate-100 flex justify-between items-center">
               <div>
-                <h3 className="text-xl sm:text-2xl font-black text-slate-800">{language === 'pt' ? 'Gerir Categorias' : 'Manage Categories'}</h3>
-                <p className="text-slate-400 text-xs sm:text-sm">{language === 'pt' ? 'Adicione ou edite os tipos de produtos' : 'Add or edit product types'}</p>
+                <h3 className="text-xl sm:text-2xl font-black text-slate-800">{t.categoryModalTitle}</h3>
+                <p className="text-slate-400 text-xs sm:text-sm">{t.categoryModalSubtitle}</p>
               </div>
               <button onClick={() => setShowCategoryModal(false)} className="text-slate-300 hover:text-slate-900">
                 <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
@@ -508,47 +508,52 @@ const ProductCatalogView: React.FC<Props> = ({
                   type="text"
                   value={newCatName}
                   onChange={(e) => setNewCatName(e.target.value)}
-                  placeholder={language === 'pt' ? 'Nova Categoria...' : 'New Category...'}
+                  placeholder={t.newCategoryPlaceholder}
                   className="flex-1 bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all font-bold text-sm"
+                  onKeyDown={(e) => e.key === 'Enter' && handleAddCat()}
                 />
                 <button 
                   onClick={handleAddCat}
                   disabled={!newCatName.trim()}
                   className="bg-blue-600 text-white px-6 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-blue-700 transition-colors shadow-lg shadow-blue-100 disabled:opacity-50"
                 >
-                  {language === 'pt' ? 'Adicionar' : 'Add'}
+                  {t.addCategoryBtn}
                 </button>
               </div>
 
               <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-2">
                 {categories.map((cat, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl group">
+                  <div key={i} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl group transition-all hover:bg-white hover:shadow-md">
                     {editingCatName?.old === cat ? (
                       <div className="flex-1 flex gap-2">
                         <input 
                           type="text"
                           value={editingCatName.new}
                           onChange={(e) => setEditingCatName({ ...editingCatName, new: e.target.value })}
-                          className="flex-1 bg-white border border-blue-500 rounded-lg px-3 py-1 text-sm outline-none"
+                          className="flex-1 bg-white border border-blue-500 rounded-lg px-3 py-1 text-sm outline-none shadow-inner"
                           autoFocus
+                          onKeyDown={(e) => {
+                             if (e.key === 'Enter') handleSaveEditCat();
+                             if (e.key === 'Escape') setEditingCatName(null);
+                          }}
                         />
-                        <button onClick={handleSaveEditCat} className="text-green-600 hover:text-green-700 font-bold text-xs uppercase">Save</button>
-                        <button onClick={() => setEditingCatName(null)} className="text-slate-400 font-bold text-xs uppercase">Cancel</button>
+                        <button onClick={handleSaveEditCat} className="text-green-600 hover:text-green-700 font-bold text-[10px] uppercase tracking-widest">Save</button>
+                        <button onClick={() => setEditingCatName(null)} className="text-slate-400 font-bold text-[10px] uppercase tracking-widest">Cancel</button>
                       </div>
                     ) : (
                       <>
                         <span className="font-bold text-slate-700 text-sm">{cat}</span>
                         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => handleStartEditCat(cat)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
+                          <button onClick={() => handleStartEditCat(cat)} className="p-2 text-slate-300 hover:text-blue-600 transition-colors">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2"/></svg>
                           </button>
                           <button 
                             onClick={() => {
                               const inUse = products.some(p => p.category === cat);
-                              if (inUse) alert(language === 'pt' ? 'Esta categoria está em uso e não pode ser eliminada.' : 'This category is in use and cannot be deleted.');
+                              if (inUse) alert(t.inUseWarning);
                               else onDeleteCategory(cat);
                             }} 
-                            className="p-2 text-slate-400 hover:text-red-600 transition-colors"
+                            className="p-2 text-slate-300 hover:text-red-600 transition-colors"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" strokeWidth="2"/></svg>
                           </button>
@@ -709,7 +714,7 @@ const ProductCatalogView: React.FC<Props> = ({
                     className="w-full bg-slate-50 border-slate-200 rounded-xl sm:rounded-2xl px-4 sm:px-5 py-3 sm:py-4 text-xs sm:text-sm focus:ring-4 focus:ring-blue-100 outline-none font-mono transition-all"
                   />
 
-                  <div className="flex flex-wrap gap-1.5 sm:gap-2 max-h-24 sm:max-h-32 overflow-y-auto p-1">
+                  <div className="flex flex-wrap gap-1.5 sm:gap-1.5 max-h-24 sm:max-h-32 overflow-y-auto p-1">
                     {scannedIMEIs.map((imei, idx) => (
                       <div key={idx} className="bg-blue-600 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg sm:rounded-xl text-[8px] sm:text-[10px] font-mono flex items-center gap-1 sm:gap-2 group shadow-sm">
                         {imei}
@@ -749,7 +754,7 @@ const ProductCatalogView: React.FC<Props> = ({
                 <button 
                   onClick={handleSaveInbound}
                   disabled={!selectedProductId || (scannedIMEIs.length === 0 && !bulkInput.trim())}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-30 disabled:grayscale text-white px-6 sm:px-10 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-black shadow-xl shadow-blue-200 transition-all uppercase tracking-widest text-[10px] sm:text-xs"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-30 disabled:grayscale text-white px-6 sm:px-10 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-black shadow-xl shadow-blue-100 transition-all uppercase tracking-widest text-[10px] sm:text-xs"
                 >
                   {t.confirm}
                 </button>
@@ -791,16 +796,21 @@ const ProductCatalogView: React.FC<Props> = ({
                   onChange={e => setFormProduct({...formProduct, category: e.target.value})} 
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none focus:border-blue-500"
                 >
-                  <option value="">-- {language === 'pt' ? 'Selecionar Categoria' : 'Select Category'} --</option>
+                  <option value="">-- {t.selectCategory} --</option>
                   {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                  <option value="NEW">+ {language === 'pt' ? 'Criar Nova' : 'Create New'}</option>
+                  <option value="NEW">+ {t.createNew}</option>
                 </select>
               </div>
 
               {formProduct.category === 'NEW' && (
                 <div className="space-y-1 animate-in slide-in-from-top-2">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.addProductModal.newCategory}</label>
-                  <input value={formProduct.customCategory} onChange={e => setFormProduct({...formProduct, customCategory: e.target.value})} className="w-full bg-slate-50 border border-blue-500 rounded-xl px-4 py-2 text-sm outline-none" placeholder="e.g. Smartwatch" />
+                  <input 
+                    value={formProduct.customCategory} 
+                    onChange={e => setFormProduct({...formProduct, customCategory: e.target.value})} 
+                    className="w-full bg-slate-50 border border-blue-500 rounded-xl px-4 py-2 text-sm outline-none" 
+                    placeholder="e.g. Smartwatch" 
+                  />
                 </div>
               )}
 
