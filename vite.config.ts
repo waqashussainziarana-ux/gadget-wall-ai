@@ -10,7 +10,8 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     define: {
       // Ensure the API_KEY is stringified properly for the browser context
-      'process.env.API_KEY': JSON.stringify(env.API_KEY || process.env.API_KEY),
+      // Defaulting to "" prevents "undefined" string being passed to the SDK
+      'process.env.API_KEY': JSON.stringify(env.API_KEY || process.env.API_KEY || ""),
     },
     build: {
       outDir: 'dist',

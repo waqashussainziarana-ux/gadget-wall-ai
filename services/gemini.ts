@@ -6,22 +6,29 @@ import { Product } from "../types";
 export class SalesAgentService {
   private chat: any;
 
-  // Initialize a new instance each time we need one to ensure we have the latest environment state
-  // Fix: Strictly follow initialization guideline by using process.env.API_KEY directly
   private getAI() {
-    return new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const apiKey = process.env.API_KEY;
+    if (!apiKey) {
+      console.error("Gemini API Key is missing. Please set API_KEY environment variable.");
+    }
+    return new GoogleGenAI({ apiKey: apiKey || "" });
   }
 
   async startConversation(products: Product[]) {
-    const ai = this.getAI();
-    const systemInstruction = generateSystemPrompt(products);
-    this.chat = ai.chats.create({
-      model: 'gemini-3-flash-preview',
-      config: {
-        systemInstruction,
-        temperature: 0.6,
-      },
-    });
+    try {
+      const ai = this.getAI();
+      const systemInstruction = generateSystemPrompt(products);
+      this.chat = ai.chats.create({
+        model: 'gemini-3-flash-preview',
+        config: {
+          systemInstruction,
+          temperature: 0.6,
+        },
+      });
+    } catch (error) {
+      console.error("Failed to start Gemini conversation:", error);
+      throw error;
+    }
   }
 
   async sendMessage(message: string, currentProducts: Product[]) {
@@ -30,13 +37,21 @@ export class SalesAgentService {
     }
     try {
       const response = await this.chat.sendMessage({ message });
+      if (!response || !response.text) {
+        throw new Error("Empty response from AI");
+      }
       return response.text;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Gemini Chat Error:", error);
-      // If the chat session is lost or errored, re-start it
-      await this.startConversation(currentProducts);
-      const retryResponse = await this.chat.sendMessage({ message });
-      return retryResponse.text;
+      
+      // If session expired or specific error, attempt one restart
+      if (error?.message?.includes('400') || error?.message?.includes('expired')) {
+        await this.startConversation(currentProducts);
+        const retryResponse = await this.chat.sendMessage({ message });
+        return retryResponse.text;
+      }
+      
+      throw error;
     }
   }
 
@@ -63,8 +78,6 @@ export class SalesAgentService {
     `;
 
     try {
-      // For Search Grounding, we use gemini-3-flash-preview as per text examples
-      // We also handle the possibility that response.text is not pure JSON
       const response = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: prompt,
@@ -74,7 +87,6 @@ export class SalesAgentService {
       });
 
       const text = response.text || '[]';
-      // Attempt to find the JSON block in case there's surrounding text
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       const jsonStr = jsonMatch ? jsonMatch[0] : text;
       
@@ -88,7 +100,6 @@ export class SalesAgentService {
 
       const grounding = response.candidates?.[0]?.groundingMetadata?.groundingChunks;
       if (grounding && Array.isArray(grounding)) {
-        // Enrich results with grounding URLs if missing
         results.forEach((res: any, idx: number) => {
           if (!res.sourceUrl && grounding[idx]?.web?.uri) {
             res.sourceUrl = grounding[idx].web.uri;

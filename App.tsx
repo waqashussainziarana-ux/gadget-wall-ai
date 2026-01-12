@@ -14,6 +14,7 @@ import { translations, Language } from './translations';
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AppTab>(AppTab.CHAT);
   const [products, setProducts] = useState<Product[]>(INITIAL_CATALOG);
+  const [categories, setCategories] = useState<string[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [language, setLanguage] = useState<Language>('en'); 
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
@@ -42,8 +43,29 @@ const App: React.FC = () => {
       setOrders(JSON.parse(savedOrders));
     }
 
+    const savedProducts = localStorage.getItem('gw_products');
+    if (savedProducts) {
+      setProducts(JSON.parse(savedProducts));
+    }
+
+    const savedCats = localStorage.getItem('gw_categories');
+    if (savedCats) {
+      setCategories(JSON.parse(savedCats));
+    } else {
+      // Derive initial categories from the catalog
+      const initialCats = Array.from(new Set(INITIAL_CATALOG.map(p => p.category)));
+      setCategories(initialCats);
+    }
+
     setIsReady(true);
   }, []);
+
+  useEffect(() => {
+    if (isReady) {
+      localStorage.setItem('gw_products', JSON.stringify(products));
+      localStorage.setItem('gw_categories', JSON.stringify(categories));
+    }
+  }, [products, categories, isReady]);
 
   const handleSetLanguage = (lang: Language) => {
     setLanguage(lang);
@@ -88,14 +110,36 @@ const App: React.FC = () => {
 
   const handleAddProducts = (newProducts: Product[]) => {
     setProducts(prev => [...prev, ...newProducts]);
+    // Also add any new categories found in imported products
+    const newCats = newProducts.map(p => p.category);
+    setCategories(prev => Array.from(new Set([...prev, ...newCats])));
   };
 
   const handleUpdateProduct = (updatedProduct: Product) => {
     setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+    if (!categories.includes(updatedProduct.category)) {
+      setCategories(prev => [...prev, updatedProduct.category]);
+    }
   };
 
   const handleDeleteProduct = (productId: string) => {
     setProducts(prev => prev.filter(p => p.id !== productId));
+  };
+
+  const handleUpdateCategory = (oldName: string, newName: string) => {
+    setCategories(prev => prev.map(c => c === oldName ? newName : c));
+    setProducts(prev => prev.map(p => p.category === oldName ? { ...p, category: newName } : p));
+  };
+
+  const handleAddCategory = (name: string) => {
+    if (!categories.includes(name)) {
+      setCategories(prev => [...prev, name]);
+    }
+  };
+
+  const handleDeleteCategory = (name: string) => {
+    setCategories(prev => prev.filter(c => c !== name));
+    // Optionally: reset category for products or warn user
   };
 
   const renderContent = () => {
@@ -106,10 +150,14 @@ const App: React.FC = () => {
         return (
           <ProductCatalogView 
             products={products} 
+            categories={categories}
             onUpdateStock={handleUpdateStock} 
             onAddProducts={handleAddProducts}
             onUpdateProduct={handleUpdateProduct}
             onDeleteProduct={handleDeleteProduct}
+            onAddCategory={handleAddCategory}
+            onUpdateCategory={handleUpdateCategory}
+            onDeleteCategory={handleDeleteCategory}
             language={language} 
           />
         );

@@ -5,20 +5,36 @@ import { Language, translations } from '../translations';
 
 interface Props {
   products: Product[];
+  categories: string[];
   onUpdateStock: (productId: string, serials: string[]) => void;
   onAddProducts: (newProducts: Product[]) => void;
   onUpdateProduct: (product: Product) => void;
   onDeleteProduct: (productId: string) => void;
+  onAddCategory: (name: string) => void;
+  onUpdateCategory: (oldName: string, newName: string) => void;
+  onDeleteCategory: (name: string) => void;
   language: Language;
 }
 
-const ProductCatalogView: React.FC<Props> = ({ products, onUpdateStock, onAddProducts, onUpdateProduct, onDeleteProduct, language }) => {
+const ProductCatalogView: React.FC<Props> = ({ 
+  products, 
+  categories,
+  onUpdateStock, 
+  onAddProducts, 
+  onUpdateProduct, 
+  onDeleteProduct, 
+  onAddCategory,
+  onUpdateCategory,
+  onDeleteCategory,
+  language 
+}) => {
   const t = useMemo(() => translations[language].catalog, [language]);
   
   const [showInboundModal, setShowInboundModal] = useState(false);
   const [showAddProductModal, setShowAddProductModal] = useState(false);
   const [showImportPreviewModal, setShowImportPreviewModal] = useState(false);
   const [showLookupModal, setShowLookupModal] = useState(false);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   
   const [selectedProductId, setSelectedProductId] = useState<string>('');
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -41,9 +57,8 @@ const ProductCatalogView: React.FC<Props> = ({ products, onUpdateStock, onAddPro
     name: '', brand: '', category: '', customCategory: '', price: '', stock: '', barcode: '', description: '', cost: ''
   });
 
-  const categories = useMemo(() => {
-    return Array.from(new Set(products.map(p => p.category)));
-  }, [products]);
+  const [newCatName, setNewCatName] = useState('');
+  const [editingCatName, setEditingCatName] = useState<{ old: string, new: string } | null>(null);
 
   const filteredProducts = products.filter(p => {
     const q = searchQuery.toLowerCase().trim();
@@ -141,6 +156,11 @@ const ProductCatalogView: React.FC<Props> = ({ products, onUpdateStock, onAddPro
 
     const finalCategory = category === 'NEW' ? customCategory : category;
     
+    // Auto-add category to main list if it's new
+    if (category === 'NEW' && customCategory) {
+      onAddCategory(customCategory);
+    }
+
     if (editingProduct) {
       onUpdateProduct({
         ...editingProduct,
@@ -251,6 +271,24 @@ const ProductCatalogView: React.FC<Props> = ({ products, onUpdateStock, onAddPro
     setLookupResult(found || null);
   };
 
+  const handleAddCat = () => {
+    if (newCatName.trim()) {
+      onAddCategory(newCatName.trim());
+      setNewCatName('');
+    }
+  };
+
+  const handleStartEditCat = (cat: string) => {
+    setEditingCatName({ old: cat, new: cat });
+  };
+
+  const handleSaveEditCat = () => {
+    if (editingCatName && editingCatName.new.trim()) {
+      onUpdateCategory(editingCatName.old, editingCatName.new.trim());
+      setEditingCatName(null);
+    }
+  };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-8">
@@ -299,6 +337,14 @@ const ProductCatalogView: React.FC<Props> = ({ products, onUpdateStock, onAddPro
         </div>
 
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap lg:flex-nowrap gap-2 w-full xl:w-auto">
+          <button 
+            onClick={() => setShowCategoryModal(true)}
+            className="flex-1 sm:flex-none justify-center whitespace-nowrap bg-slate-800 text-white hover:bg-slate-900 px-4 sm:px-6 py-2.5 sm:py-4 rounded-xl sm:rounded-2xl font-bold transition-all flex items-center gap-2 border border-slate-700 text-xs sm:text-sm"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7" strokeWidth="2.5" strokeLinecap="round"/></svg>
+            <span className="truncate">{language === 'pt' ? 'Gerir Categorias' : 'Manage Categories'}</span>
+          </button>
+
           <button 
             onClick={() => { setLookupQuery(''); setLookupResult(null); setShowLookupModal(true); }}
             className="flex-1 sm:flex-none justify-center whitespace-nowrap bg-blue-100 text-blue-700 hover:bg-blue-200 px-4 sm:px-6 py-2.5 sm:py-4 rounded-xl sm:rounded-2xl font-bold transition-all flex items-center gap-2 border border-blue-200 text-xs sm:text-sm"
@@ -442,7 +488,82 @@ const ProductCatalogView: React.FC<Props> = ({ products, onUpdateStock, onAddPro
         })}
       </div>
 
-      {/* Lookup Modal Responsive */}
+      {/* Category Management Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4">
+          <div className="bg-white w-full max-w-2xl rounded-2xl sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95">
+            <div className="p-6 sm:p-8 border-b border-slate-100 flex justify-between items-center">
+              <div>
+                <h3 className="text-xl sm:text-2xl font-black text-slate-800">{language === 'pt' ? 'Gerir Categorias' : 'Manage Categories'}</h3>
+                <p className="text-slate-400 text-xs sm:text-sm">{language === 'pt' ? 'Adicione ou edite os tipos de produtos' : 'Add or edit product types'}</p>
+              </div>
+              <button onClick={() => setShowCategoryModal(false)} className="text-slate-300 hover:text-slate-900">
+                <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            
+            <div className="p-6 sm:p-8 space-y-6">
+              <div className="flex gap-2">
+                <input 
+                  type="text"
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                  placeholder={language === 'pt' ? 'Nova Categoria...' : 'New Category...'}
+                  className="flex-1 bg-slate-50 border-2 border-slate-100 rounded-xl px-4 py-3 outline-none focus:ring-4 focus:ring-blue-100 focus:border-blue-500 transition-all font-bold text-sm"
+                />
+                <button 
+                  onClick={handleAddCat}
+                  disabled={!newCatName.trim()}
+                  className="bg-blue-600 text-white px-6 rounded-xl font-black uppercase tracking-widest text-[10px] hover:bg-blue-700 transition-colors shadow-lg shadow-blue-100 disabled:opacity-50"
+                >
+                  {language === 'pt' ? 'Adicionar' : 'Add'}
+                </button>
+              </div>
+
+              <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-2">
+                {categories.map((cat, i) => (
+                  <div key={i} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl group">
+                    {editingCatName?.old === cat ? (
+                      <div className="flex-1 flex gap-2">
+                        <input 
+                          type="text"
+                          value={editingCatName.new}
+                          onChange={(e) => setEditingCatName({ ...editingCatName, new: e.target.value })}
+                          className="flex-1 bg-white border border-blue-500 rounded-lg px-3 py-1 text-sm outline-none"
+                          autoFocus
+                        />
+                        <button onClick={handleSaveEditCat} className="text-green-600 hover:text-green-700 font-bold text-xs uppercase">Save</button>
+                        <button onClick={() => setEditingCatName(null)} className="text-slate-400 font-bold text-xs uppercase">Cancel</button>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="font-bold text-slate-700 text-sm">{cat}</span>
+                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => handleStartEditCat(cat)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" strokeWidth="2"/></svg>
+                          </button>
+                          <button 
+                            onClick={() => {
+                              const inUse = products.some(p => p.category === cat);
+                              if (inUse) alert(language === 'pt' ? 'Esta categoria está em uso e não pode ser eliminada.' : 'This category is in use and cannot be deleted.');
+                              else onDeleteCategory(cat);
+                            }} 
+                            className="p-2 text-slate-400 hover:text-red-600 transition-colors"
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" strokeWidth="2"/></svg>
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lookup Modal */}
       {showLookupModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4">
           <div className="bg-white w-full max-w-xl rounded-2xl sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95">
@@ -520,8 +641,7 @@ const ProductCatalogView: React.FC<Props> = ({ products, onUpdateStock, onAddPro
         </div>
       )}
 
-      {/* Other Modals (Inbound, etc.) similarly optimized for screen sizes */}
-      {/* ... keeping other modals logic for now, but adding basic responsive classes to Inbound ... */}
+      {/* Inbound Stock Modal */}
       {showInboundModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-2 sm:p-4">
           <div className="bg-white w-full max-w-3xl rounded-2xl sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[95vh] sm:max-h-[90vh] border border-white/20">
@@ -634,6 +754,81 @@ const ProductCatalogView: React.FC<Props> = ({ products, onUpdateStock, onAddPro
                   {t.confirm}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add/Edit Product Modal */}
+      {showAddProductModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/70 backdrop-blur-md p-4">
+          <div className="bg-white w-full max-w-2xl rounded-2xl sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col animate-in zoom-in-95">
+            <div className="p-6 sm:p-8 border-b border-slate-100 flex justify-between items-center">
+              <div>
+                <h3 className="text-xl sm:text-2xl font-black text-slate-800">{editingProduct ? t.addProductModal.editTitle : t.addProductModal.title}</h3>
+              </div>
+              <button onClick={() => setShowAddProductModal(false)} className="text-slate-300 hover:text-slate-900">
+                <svg className="w-6 h-6 sm:w-8 sm:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            
+            <div className="p-6 sm:p-8 space-y-4 overflow-y-auto max-h-[70vh]">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.addProductModal.name}</label>
+                  <input value={formProduct.name} onChange={e => setFormProduct({...formProduct, name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none focus:border-blue-500" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.addProductModal.brand}</label>
+                  <input value={formProduct.brand} onChange={e => setFormProduct({...formProduct, brand: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none focus:border-blue-500" />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.addProductModal.category}</label>
+                <select 
+                  value={formProduct.category} 
+                  onChange={e => setFormProduct({...formProduct, category: e.target.value})} 
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none focus:border-blue-500"
+                >
+                  <option value="">-- {language === 'pt' ? 'Selecionar Categoria' : 'Select Category'} --</option>
+                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                  <option value="NEW">+ {language === 'pt' ? 'Criar Nova' : 'Create New'}</option>
+                </select>
+              </div>
+
+              {formProduct.category === 'NEW' && (
+                <div className="space-y-1 animate-in slide-in-from-top-2">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.addProductModal.newCategory}</label>
+                  <input value={formProduct.customCategory} onChange={e => setFormProduct({...formProduct, customCategory: e.target.value})} className="w-full bg-slate-50 border border-blue-500 rounded-xl px-4 py-2 text-sm outline-none" placeholder="e.g. Smartwatch" />
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.addProductModal.price}</label>
+                  <input type="number" value={formProduct.price} onChange={e => setFormProduct({...formProduct, price: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none focus:border-blue-500" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.addProductModal.stock}</label>
+                  <input type="number" value={formProduct.stock} onChange={e => setFormProduct({...formProduct, stock: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none focus:border-blue-500" />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.addProductModal.barcode}</label>
+                <input value={formProduct.barcode} onChange={e => setFormProduct({...formProduct, barcode: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none focus:border-blue-500" />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t.addProductModal.desc}</label>
+                <textarea value={formProduct.description} onChange={e => setFormProduct({...formProduct, description: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm outline-none focus:border-blue-500 h-24" />
+              </div>
+            </div>
+
+            <div className="p-6 sm:p-8 bg-slate-50 border-t border-slate-100 flex justify-end gap-4">
+              <button onClick={() => setShowAddProductModal(false)} className="px-6 py-3 font-bold text-slate-400 uppercase tracking-widest text-[10px]">{t.cancel}</button>
+              <button onClick={handleSaveProduct} className="bg-blue-600 text-white px-10 py-3 rounded-xl font-black uppercase tracking-widest text-[10px] shadow-xl shadow-blue-100">{editingProduct ? t.addProductModal.update : t.addProductModal.save}</button>
             </div>
           </div>
         </div>

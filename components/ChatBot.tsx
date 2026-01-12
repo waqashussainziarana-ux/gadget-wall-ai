@@ -27,7 +27,9 @@ const ChatBot: React.FC<ChatBotProps> = ({ language, products, isAdmin = false, 
     setMessages([
       { role: 'model', text: t.welcome, timestamp: new Date() }
     ]);
-    salesService.startConversation(products);
+    salesService.startConversation(products).catch(err => {
+      console.error("Initial connection failed:", err);
+    });
   }, [language, t.welcome, products]);
 
   useEffect(() => {
@@ -68,7 +70,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ language, products, isAdmin = false, 
       setMessages(prev => [...prev, modelMsg]);
 
       if (data) {
-        // Automatically save order if callback exists
         if (onOrderConfirmed) {
           onOrderConfirmed({
             id: `ORD-${Date.now()}`,
@@ -79,8 +80,6 @@ const ChatBot: React.FC<ChatBotProps> = ({ language, products, isAdmin = false, 
             status: 'confirmed'
           });
         }
-        
-        // Delay invoice showing slightly for better flow
         setTimeout(() => setCurrentInvoice(data), 1000);
       }
     } catch (error: any) {
@@ -88,10 +87,14 @@ const ChatBot: React.FC<ChatBotProps> = ({ language, products, isAdmin = false, 
       let errorText = t.error;
       
       // More descriptive error for common issues
-      if (error?.message?.includes('API key not valid')) {
-        errorText = "Invalid API Key. Please check your deployment settings.";
+      if (!process.env.API_KEY || process.env.API_KEY === "") {
+        errorText = "API Key is missing. Please ensure API_KEY is set in your environment variables.";
+      } else if (error?.message?.includes('API key not valid')) {
+        errorText = "Invalid API Key. Please verify your Gemini API key in the settings.";
       } else if (error?.message?.includes('Requested entity was not found')) {
-        errorText = "The AI model is currently unavailable. Please try again later.";
+        errorText = "The AI model 'gemini-3-flash-preview' was not found or is unavailable.";
+      } else if (error?.message?.includes('fetch')) {
+        errorText = "Network error: Unable to connect to the AI service. Please check your internet connection.";
       }
       
       setMessages(prev => [...prev, { role: 'model', text: errorText, timestamp: new Date() }]);
@@ -117,7 +120,7 @@ const ChatBot: React.FC<ChatBotProps> = ({ language, products, isAdmin = false, 
           <button 
             onClick={() => {
               setMessages([{ role: 'model', text: t.resetMsg, timestamp: new Date() }]);
-              salesService.startConversation(products);
+              salesService.startConversation(products).catch(console.error);
             }} 
             className="text-[8px] sm:text-[10px] bg-white hover:bg-slate-100 border border-slate-200 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-slate-600 font-black uppercase tracking-widest transition-colors shadow-sm"
           >
